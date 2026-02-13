@@ -48,4 +48,52 @@
  */
 export function analyzeUPITransactions(transactions) {
   // Your code here
+  if (!Array.isArray(transactions) || transactions.length === 0) return null
+  const filteredTransactions = transactions.filter((tr) => tr.amount > 0 && (tr.type === "credit" || tr.type === "debit"));
+  if (filteredTransactions.length === 0) return null;
+
+  const contactFrequency = {}
+
+  const { totalCredit, totalDebit, highestTransaction, categoryBreakdown, hasLargeTransaction, allAbove100 } = filteredTransactions.reduce((acc, curr) => {
+
+    if (curr.type === "credit") {
+      acc.totalCredit += curr.amount
+    } else {
+      acc.totalDebit += curr.amount
+    }
+
+    if (acc.highestAmount < curr.amount) {
+      acc.highestTransaction = curr;
+      acc.highestAmount = curr.amount
+    }
+
+    acc.categoryBreakdown[curr.category] = (acc.categoryBreakdown[curr.category] || 0) + curr.amount
+    if (curr.amount >= 5000) acc.hasLargeTransaction = true;
+    acc.allAbove100 = acc.allAbove100 && curr.amount > 100
+
+    contactFrequency[curr.to] =  (contactFrequency[curr.to] || 0) + 1
+
+    return acc
+
+  }, {
+    totalCredit: 0,
+    totalDebit: 0,
+    highestAmount: 0,
+    highestTransaction: {},
+    categoryBreakdown: {},
+    hasLargeTransaction: false,
+    allAbove100: true
+  })
+
+  const netBalance = totalCredit - totalDebit
+  const transactionCount = filteredTransactions.length
+  const avgTransaction = Math.round((totalCredit + totalDebit) / transactionCount)
+
+  const sortedFrequencyContact = Object.entries(contactFrequency).sort((a,b) => {
+    return Number(b[1]) - Number(a[1])
+  })
+
+  const frequentContact = sortedFrequencyContact[0][0]
+
+  return {totalCredit, totalDebit, highestTransaction, categoryBreakdown, hasLargeTransaction, allAbove100, netBalance, transactionCount, avgTransaction, frequentContact}
 }
